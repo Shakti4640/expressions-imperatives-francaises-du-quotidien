@@ -93,41 +93,34 @@ function activateTab(tabId) {
   document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
 }
 
-// ── Swipe Navigation (ADD ONLY) ─────────────────
-// ── Swipe Navigation (ROBUST FIX) ─────────────────
-(function () {
-
-  let startX = 0;
-  let startY = 0;
-  let isMoving = false;
+// ── Swipe Navigation (Immediate Binding) ─────────────
+(function initSwipe() {
 
   const area = document.querySelector('.panels') || document.body;
 
-  area.addEventListener('touchstart', function (e) {
+  if (!area) {
+    requestAnimationFrame(initSwipe); // retry instantly
+    return;
+  }
+
+  let startX = 0;
+  let startY = 0;
+
+  area.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-    isMoving = true;
   }, { passive: true });
 
-  area.addEventListener('touchmove', function (e) {
-    // 👇 this forces browser to acknowledge gesture
-    if (!isMoving) return;
-  }, { passive: true });
-
-  area.addEventListener('touchend', function (e) {
-    if (!isMoving) return;
-    isMoving = false;
-
+  area.addEventListener('touchend', e => {
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
 
     const diffX = startX - endX;
     const diffY = startY - endY;
 
-    // 👇 critical: ignore vertical scroll
     if (Math.abs(diffY) > Math.abs(diffX)) return;
 
-    const threshold = 30; // 👈 lower = more sensitive
+    const threshold = 30;
 
     const tabs = Array.from(document.querySelectorAll('.tab-btn'));
     const active = document.querySelector('.tab-btn.active');
