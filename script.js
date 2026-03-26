@@ -94,43 +94,55 @@ function activateTab(tabId) {
 }
 
 // ── Swipe Navigation (ADD ONLY) ─────────────────
-let touchStartX = 0;
-let touchStartY = 0;
+// ── Swipe Navigation (ROBUST FIX) ─────────────────
+(function () {
 
-// Attach to panels to avoid scroll conflict
-const swipeArea = document.querySelector('.panels') || document.body;
+  let startX = 0;
+  let startY = 0;
+  let isMoving = false;
 
-swipeArea.addEventListener('touchstart', function (e) {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
+  const area = document.querySelector('.panels') || document.body;
 
-swipeArea.addEventListener('touchend', function (e) {
-  const touchEndX = e.changedTouches[0].clientX;
-  const touchEndY = e.changedTouches[0].clientY;
+  area.addEventListener('touchstart', function (e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isMoving = true;
+  }, { passive: true });
 
-  const diffX = touchStartX - touchEndX;
-  const diffY = touchStartY - touchEndY;
+  area.addEventListener('touchmove', function (e) {
+    // 👇 this forces browser to acknowledge gesture
+    if (!isMoving) return;
+  }, { passive: true });
 
-  const threshold = 40;
+  area.addEventListener('touchend', function (e) {
+    if (!isMoving) return;
+    isMoving = false;
 
-  // Ignore vertical scroll gestures
-  if (Math.abs(diffY) > Math.abs(diffX)) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
 
-  const tabs = Array.from(document.querySelectorAll('.tab-btn'));
-  const active = document.querySelector('.tab-btn.active');
-  const idx = tabs.indexOf(active);
+    const diffX = startX - endX;
+    const diffY = startY - endY;
 
-  if (idx === -1) return;
+    // 👇 critical: ignore vertical scroll
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
 
-  // 👉 Swipe LEFT → next tab
-  if (diffX > threshold && idx < tabs.length - 1) {
-    activateTab(tabs[idx + 1].dataset.tab);
-  }
+    const threshold = 30; // 👈 lower = more sensitive
 
-  // 👉 Swipe RIGHT → previous tab
-  if (diffX < -threshold && idx > 0) {
-    activateTab(tabs[idx - 1].dataset.tab);
-  }
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const active = document.querySelector('.tab-btn.active');
+    const idx = tabs.indexOf(active);
 
-}, { passive: true });
+    if (idx === -1) return;
+
+    if (diffX > threshold && idx < tabs.length - 1) {
+      activateTab(tabs[idx + 1].dataset.tab);
+    }
+
+    if (diffX < -threshold && idx > 0) {
+      activateTab(tabs[idx - 1].dataset.tab);
+    }
+
+  }, { passive: true });
+
+})();
