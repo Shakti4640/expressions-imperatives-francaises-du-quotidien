@@ -92,3 +92,34 @@ function activateTab(tabId) {
   const idx = Array.from(tabBtns).indexOf(btn);
   document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
 }
+
+let touchStartX = 0;
+let touchEndX = 0;
+
+const touchArea = document.body;
+
+touchArea.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+
+touchArea.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].clientX;
+
+  const diff = touchStartX - touchEndX;
+  const threshold = 50;
+
+  const visibleTabs = Array.from(document.querySelectorAll('.tab-btn.visible'));
+  const active = document.querySelector('.tab-btn.active');
+  const idx = visibleTabs.indexOf(active);
+
+  if (idx === -1) return; // 🔴 important safety
+
+  if (diff > threshold && idx < visibleTabs.length - 1) {
+    visibleTabs[idx + 1].click();
+  }
+
+  if (diff < -threshold && idx > 0) {
+    visibleTabs[idx - 1].click();
+  }
+
+}, { passive: true });
