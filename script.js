@@ -1,143 +1,119 @@
-// Tab switching
-const tabBtns = document.querySelectorAll('.tab-btn');
-const panels = document.querySelectorAll('.panel');
-
+// 1. Tab switching - Define ONCE and ensure it's accessible
 function activateTab(tabId) {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.panel');
+  const tabCounter = document.getElementById('tabCounter');
+
   tabBtns.forEach(b => b.classList.remove('active'));
   panels.forEach(p => p.classList.remove('active'));
-  const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
-  const panel = document.getElementById('panel-' + tabId);
-  if (btn) btn.classList.add('active');
-  if (panel) panel.classList.add('active');
-  // Update counter
-  const idx = Array.from(tabBtns).indexOf(btn);
-  document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
+
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  const panel = document.getElementById(`panel-${tabId}`);
+
+  if (btn) {
+    btn.classList.add('active');
+    // Ensure the tab button stays in view on mobile
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    
+    // Update counter
+    const all = Array.from(tabBtns);
+    const idx = all.indexOf(btn);
+    if (tabCounter) {
+      tabCounter.textContent = `${idx + 1} / ${all.length} tabs`;
+    }
+  }
+
+  if (panel) {
+    panel.classList.add('active');
+  }
 }
 
-tabBtns.forEach(btn => {
-  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+// 2. Initialize Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+  });
+
+  // Activate first tab
+  activateTab('set-1');
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const active = document.querySelector('.tab-btn.active');
+    const all = Array.from(tabBtns);
+    const idx = all.indexOf(active);
+    if (e.key === 'ArrowRight' && idx < all.length - 1) activateTab(all[idx+1].dataset.tab);
+    if (e.key === 'ArrowLeft' && idx > 0) activateTab(all[idx-1].dataset.tab);
+  });
 });
 
-// Activate first tab
-activateTab('set-1');
-
-// Keyboard nav
-document.addEventListener('keydown', e => {
-  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-  const active = document.querySelector('.tab-btn.active');
-  const all = Array.from(tabBtns);
-  const idx = all.indexOf(active);
-  if (e.key === 'ArrowRight' && idx < all.length - 1) activateTab(all[idx+1].dataset.tab);
-  if (e.key === 'ArrowLeft' && idx > 0) activateTab(all[idx-1].dataset.tab);
-});
-
-// Accordion
+// 3. Verb Search & Accordion (Simplified)
 function toggleAccordion(letter) {
   const item = document.getElementById('acc-' + letter);
   const isOpen = item.classList.contains('open');
   document.querySelectorAll('.accordion-item.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) {
+  if (!isOpen && item) {
     item.classList.add('open');
     setTimeout(() => item.scrollIntoView({behavior: 'smooth', block: 'nearest'}), 50);
   }
 }
 
-// Verb search
-document.getElementById('verb-search').addEventListener('input', function() {
-  const q = this.value.toLowerCase().trim();
-  document.querySelectorAll('.verb-row').forEach(row => {
-    const v = row.dataset.verb || '';
-    const m = row.dataset.meaning || '';
-    if (!q || v.includes(q) || m.includes(q)) {
-      row.classList.remove('hidden');
-    } else {
-      row.classList.add('hidden');
+const searchInput = document.getElementById('verb-search');
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.verb-row').forEach(row => {
+      const v = (row.dataset.verb || '').toLowerCase();
+      const m = (row.dataset.meaning || '').toLowerCase();
+      row.classList.toggle('hidden', q && !v.includes(q) && !m.includes(q));
+    });
+    if (q) {
+      document.querySelectorAll('.accordion-item').forEach(item => item.classList.add('open'));
     }
   });
-  // Open all accordions when searching
-  if (q) {
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.add('open'));
-  }
-});
-
-// Download
-function downloadPage() {
-  const html = document.documentElement.outerHTML;
-  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '1000-French-Imperative-Phrases.html';
-  a.click();
 }
 
-if (btn) {
-  btn.classList.add('active');
-  btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-}
-
-function activateTab(tabId) {
-  tabBtns.forEach(b => b.classList.remove('active'));
-  panels.forEach(p => p.classList.remove('active'));
-
-  const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
-  const panel = document.getElementById('panel-' + tabId);
-
-  if (btn) {
-    btn.classList.add('active');
-    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }
-
-  if (panel) panel.classList.add('active');
-
-  const idx = Array.from(tabBtns).indexOf(btn);
-  document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
-}
-
-// ── FORCE SWIPE (NON-PASSIVE FIX) ─────────────
+// 4. THE SWIPE FIX
 (function () {
-
   let startX = 0;
   let startY = 0;
+  let startTime = 0;
 
+  // Brave/Chrome often need the listener on a wrapper that actually receives the touch
   const area = document.getElementById('panelsContainer') || document.body;
 
   area.addEventListener('touchstart', function (e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-  }, { passive: false }); // 🔥 IMPORTANT
-
-  area.addEventListener('touchmove', function (e) {
-    // 🔥 This line forces browser to allow horizontal gesture
-    if (Math.abs(startX - e.touches[0].clientX) > Math.abs(startY - e.touches[0].clientY)) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+    startTime = new Date().getTime();
+  }, { passive: true }); // Use true for better performance unless you MUST prevent scroll
 
   area.addEventListener('touchend', function (e) {
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
+    const elapsed = new Date().getTime() - startTime;
 
     const diffX = startX - endX;
     const diffY = startY - endY;
 
-    if (Math.abs(diffY) > Math.abs(diffX)) return;
+    // Thresholds: move at least 50px horizontally, less than 100px vertically, and fast enough
+    if (Math.abs(diffX) > 50 && Math.abs(diffY) < 100 && elapsed < 300) {
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const active = document.querySelector('.tab-btn.active');
+      const idx = tabs.indexOf(active);
 
-    const threshold = 20;
+      if (idx === -1) return;
 
-    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
-    const active = document.querySelector('.tab-btn.active');
-    const idx = tabs.indexOf(active);
-
-    if (idx === -1) return;
-
-    if (diffX > threshold && idx < tabs.length - 1) {
-      activateTab(tabs[idx + 1].dataset.tab);
+      if (diffX > 0 && idx < tabs.length - 1) {
+        // Swiped Left -> Go Right
+        activateTab(tabs[idx + 1].dataset.tab);
+      } else if (diffX < 0 && idx > 0) {
+        // Swiped Right -> Go Left
+        activateTab(tabs[idx - 1].dataset.tab);
+      }
     }
-
-    if (diffX < -threshold && idx > 0) {
-      activateTab(tabs[idx - 1].dataset.tab);
-    }
-
-  }, { passive: false });
-
+  }, { passive: true });
 })();
