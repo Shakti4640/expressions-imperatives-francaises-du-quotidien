@@ -1,79 +1,7 @@
-// Tab switching
+document.addEventListener('DOMContentLoaded', function () {
+
 const tabBtns = document.querySelectorAll('.tab-btn');
 const panels = document.querySelectorAll('.panel');
-
-function activateTab(tabId) {
-  tabBtns.forEach(b => b.classList.remove('active'));
-  panels.forEach(p => p.classList.remove('active'));
-  const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
-  const panel = document.getElementById('panel-' + tabId);
-  if (btn) btn.classList.add('active');
-  if (panel) panel.classList.add('active');
-  // Update counter
-  const idx = Array.from(tabBtns).indexOf(btn);
-  document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
-}
-
-tabBtns.forEach(btn => {
-  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
-});
-
-// Activate first tab
-activateTab('set-1');
-
-// Keyboard nav
-document.addEventListener('keydown', e => {
-  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-  const active = document.querySelector('.tab-btn.active');
-  const all = Array.from(tabBtns);
-  const idx = all.indexOf(active);
-  if (e.key === 'ArrowRight' && idx < all.length - 1) activateTab(all[idx+1].dataset.tab);
-  if (e.key === 'ArrowLeft' && idx > 0) activateTab(all[idx-1].dataset.tab);
-});
-
-// Accordion
-function toggleAccordion(letter) {
-  const item = document.getElementById('acc-' + letter);
-  const isOpen = item.classList.contains('open');
-  document.querySelectorAll('.accordion-item.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) {
-    item.classList.add('open');
-    setTimeout(() => item.scrollIntoView({behavior: 'smooth', block: 'nearest'}), 50);
-  }
-}
-
-// Verb search
-document.getElementById('verb-search').addEventListener('input', function() {
-  const q = this.value.toLowerCase().trim();
-  document.querySelectorAll('.verb-row').forEach(row => {
-    const v = row.dataset.verb || '';
-    const m = row.dataset.meaning || '';
-    if (!q || v.includes(q) || m.includes(q)) {
-      row.classList.remove('hidden');
-    } else {
-      row.classList.add('hidden');
-    }
-  });
-  // Open all accordions when searching
-  if (q) {
-    document.querySelectorAll('.accordion-item').forEach(item => item.classList.add('open'));
-  }
-});
-
-// Download
-function downloadPage() {
-  const html = document.documentElement.outerHTML;
-  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '1000-French-Imperative-Phrases.html';
-  a.click();
-}
-
-if (btn) {
-  btn.classList.add('active');
-  btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-}
 
 function activateTab(tabId) {
   tabBtns.forEach(b => b.classList.remove('active'));
@@ -90,36 +18,57 @@ function activateTab(tabId) {
   if (panel) panel.classList.add('active');
 
   const idx = Array.from(tabBtns).indexOf(btn);
-  document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
+  const counter = document.getElementById('tabCounter');
+  if (counter) {
+    counter.textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
+  }
 }
 
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+});
+
+activateTab('set-1');
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+  const active = document.querySelector('.tab-btn.active');
+  const all = Array.from(tabBtns);
+  const idx = all.indexOf(active);
+
+  if (e.key === 'ArrowRight' && idx < all.length - 1) activateTab(all[idx+1].dataset.tab);
+  if (e.key === 'ArrowLeft' && idx > 0) activateTab(all[idx-1].dataset.tab);
+});
+
+// Swipe
 let touchStartX = 0;
-let touchEndX = 0;
 
-const touchArea = document.body;
-
-touchArea.addEventListener('touchstart', e => {
+document.body.addEventListener('touchstart', e => {
   touchStartX = e.touches[0].clientX;
 }, { passive: true });
 
-touchArea.addEventListener('touchend', e => {
-  touchEndX = e.changedTouches[0].clientX;
+document.body.addEventListener('touchend', e => {
+  const touchEndX = e.changedTouches[0].clientX;
 
   const diff = touchStartX - touchEndX;
   const threshold = 50;
 
-  const visibleTabs = Array.from(document.querySelectorAll('.tab-btn.visible'));
+  const visibleTabs = Array.from(document.querySelectorAll('.tab-btn'));
   const active = document.querySelector('.tab-btn.active');
   const idx = visibleTabs.indexOf(active);
 
-  if (idx === -1) return; // 🔴 important safety
+  if (idx === -1) return;
 
   if (diff > threshold && idx < visibleTabs.length - 1) {
-    visibleTabs[idx + 1].click();
+    activateTab(visibleTabs[idx + 1].dataset.tab);
   }
 
   if (diff < -threshold && idx > 0) {
-    visibleTabs[idx - 1].click();
+    activateTab(visibleTabs[idx - 1].dataset.tab);
   }
 
 }, { passive: true });
+
+});
