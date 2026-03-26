@@ -59,43 +59,46 @@ if (e.key === 'ArrowLeft' && idx > 0) {
 let touchStartX = 0;
 let touchStartY = 0;
 
-document.addEventListener('touchstart', e => {
-touchStartX = e.touches[0].clientX;
-touchStartY = e.touches[0].clientY;
-}, { passive: true });
+const swipeArea = document.querySelector('.panels'); // 👈 IMPORTANT
 
-document.addEventListener('touchend', e => {
-const touchEndX = e.changedTouches[0].clientX;
-const touchEndY = e.changedTouches[0].clientY;
+if (swipeArea) {
 
-```
-const diffX = touchStartX - touchEndX;
-const diffY = touchStartY - touchEndY;
+  swipeArea.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
 
-const threshold = 50;
+  swipeArea.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
 
-// Ignore vertical scroll
-if (Math.abs(diffY) > Math.abs(diffX)) return;
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
 
-const tabs = Array.from(document.querySelectorAll('.tab-btn'));
-const active = document.querySelector('.tab-btn.active');
-const idx = tabs.indexOf(active);
+    const threshold = 40;
 
-if (idx === -1) return;
+    // ❌ Ignore vertical scroll
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
 
-// Swipe LEFT → next
-if (diffX > threshold && idx < tabs.length - 1) {
-  activateTab(tabs[idx + 1].dataset.tab);
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const active = document.querySelector('.tab-btn.active');
+    const idx = tabs.indexOf(active);
+
+    if (idx === -1) return;
+
+    // 👉 LEFT swipe → next
+    if (diffX > threshold && idx < tabs.length - 1) {
+      activateTab(tabs[idx + 1].dataset.tab);
+    }
+
+    // 👉 RIGHT swipe → previous
+    if (diffX < -threshold && idx > 0) {
+      activateTab(tabs[idx - 1].dataset.tab);
+    }
+
+  }, { passive: true });
+
 }
-
-// Swipe RIGHT → previous
-if (diffX < -threshold && idx > 0) {
-  activateTab(tabs[idx - 1].dataset.tab);
-}
-```
-
-}, { passive: true });
-
 // ── Accordion ───────────────────────
 window.toggleAccordion = function(letter) {
 const item = document.getElementById('acc-' + letter);
