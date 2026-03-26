@@ -1716,6 +1716,29 @@ function downloadPage() {
   a.download = '1000-French-Imperative-Phrases.html';
   a.click();
 }
+
+if (btn) {
+  btn.classList.add('active');
+  btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+}
+
+function activateTab(tabId) {
+  tabBtns.forEach(b => b.classList.remove('active'));
+  panels.forEach(p => p.classList.remove('active'));
+
+  const btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+  const panel = document.getElementById('panel-' + tabId);
+
+  if (btn) {
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  if (panel) panel.classList.add('active');
+
+  const idx = Array.from(tabBtns).indexOf(btn);
+  document.getElementById('tabCounter').textContent = (idx + 1) + ' / ' + tabBtns.length + ' tabs';
+}
 </script>
 </body>
 </html>
